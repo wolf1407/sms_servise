@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Список номерів</title>
+
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            box-sizing: border-box;
+        }
+        
+        input[type="submit"] {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .status-success {
+            background-color: green;
+        }
+
+        .status-wait {
+            background-color: yellow;
+        }
+
+        .status-cancel {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="add-numbers-button">
+        <a href="{{ url_for('add_number') }}">Додати номера</a>
+    </div>
+    <h1>Всі номери</h1>
+     
+    <!-- Фільтр статусу -->
+    <div>
+        <label for="statusFilter">Фільтр статусу:</label>
+        <select id="statusFilter">
+            <option value="">Всі</option>
+            <option value="status-success">Success</option>
+            <option value="status-wait">Wait</option>
+            <option value="status-cancel">Cancel</option>
+            <option value="status-none">None</option>
+        </select>
+    </div>
+
+    <table id="numbersTable">
+        <tr>
+            <th>id</th>
+            <th>Номер</th>
+            <th>Статус</th>
+        </tr>
+        {% for id, number, status in numbers %}
+        <tr class="{{ 'status-' + (status.lower() if status else 'none') }}">
+            <td>{{ id }}</td>
+            <td>{{ number }}</td>
+            <td>{{ status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <script>
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            var selectedStatus = this.value;
+            var tableRows = document.querySelectorAll('#numbersTable tr');
+            
+            for (var i = 0; i < tableRows.length; i++) {
+                var row = tableRows[i];
+                
+                // Показати всі рядки, якщо вибрано "Всі"
+                if (selectedStatus === '') {
+                    row.style.display = '';
+                }
+                // Показати лише ті рядки, які відповідають вибраному статусу
+                else if (row.classList.contains(selectedStatus)) {
+                    row.style.display = '';
+                } 
+                // Приховати всі інші рядки
+                else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+
+        function saveCode(id) {
+            var input = document.querySelector('input[name="code"]');
+            var code = input.value;
+            var regex = /^[0-9]+$/;
+            if (!regex.test(code)) {
+                alert('Поле "Code" повинно містити лише цифри!');
+                return;
+            }
+            // Відправка коду на сервер для збереження
+            var xhr = new XMLHttpRequest();
+            var url = '/save';
+            var data = JSON.stringify({ id: id, code: code });
+            
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
+                    alert('Код успішно збережений');
+                    window.location.reload();
+                }
+            };
+            
+            xhr.send(data);
+        }
+
+        function cancel(id) {
+      
+            // Відправка коду на сервер для збереження
+            var xhr = new XMLHttpRequest();
+            var url = '/cancel';
+            var data = JSON.stringify({ id: id });
+            
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
+                    alert('Номер відмінений');
+                    window.location.reload();
+                }
+            };
+            
+            xhr.send(data);
+        }
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Список номерів</title>
+
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            box-sizing: border-box;
+        }
+        
+        input[type="submit"] {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="add-numbers-button">
+        <a href="{{ url_for('add_number') }}">Додати номера</a>
+        <a href="{{ url_for('all') }}">Всі номери</a>
+    </div>
+    
+    <h1>Активні номери</h1>
+    <table>
+        <tr>
+            <th>id</th>
+            <th>Номер</th>
+            <th>Дата створення</th>
+            <th>Введіть код</th>
+            <th>Дії</th>
+        </tr>
+        {% for id, number, created_date, _ in numbers %}
+        <tr>
+            <td>{{ id }}</td>
+            <td>{{ number }}</td>
+            <td>{{ created_date }}</td>
+            <td><input type="text" name="code" placeholder="Введіть код"></td>
+            <td><button onclick="saveCode('{{ id }}')">Зберегти</button>   <button onclick="cancel('{{ id }}', '{{ number }}')">Відмінити</button></td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <script>
+        function saveCode(id) {
+            var input = document.querySelector('input[name="code"]');
+            var code = input.value;
+            var regex = /^[0-9]+$/;
+            if (!regex.test(code)) {
+                alert('Поле "Code" повинно містити лише цифри!');
+                return;
+            }
+            // Відправка коду на сервер для збереження
+            var xhr = new XMLHttpRequest();
+            var url = '/save';
+            var data = JSON.stringify({ id: id, code: code });
+            
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
+                    alert('Код успішно збережений');
+                    window.location.reload();
+                }
+            };
+            
+            xhr.send(data);
+        }
+
+        function cancel(id, number) {
+      
+            // Відправка коду на сервер для збереження
+            var xhr = new XMLHttpRequest();
+            var url = '/cancel';
+            //var data = JSON.stringify({ id: id , number : number });
+            var data = JSON.stringify({ id: id, number: number });
+            
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
+                    alert('Номер відмінений');
+                    window.location.reload();
+                }
+            };
+            
+            xhr.send(data);
+        }
+    </script>
+    
+</body>
+</html>

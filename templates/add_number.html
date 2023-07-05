@@ -48,9 +48,77 @@
         .form-button:hover {
             background-color: #45a049;
         }
+        .side-nav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .side-nav a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .side-nav a:hover {
+            color: #f1f1f1;
+        }
+
+        .side-nav .close-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /* стилі для кнопки, яка відкриває меню */
+        .open-btn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #111;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        .open-btn:hover {
+            background-color: #444;
+        }
+
+        /* додаємо анімацію для відкриття меню */
+        @keyframes slideIn {
+            from {width: 0;}
+            to {width: 250px;}
+        }
+
+        @keyframes slideOut {
+            from {width: 250px;}
+            to {width: 0;}
+        }
     </style>
 </head>
 <body>
+
+    <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
+
+    <div id="sideNav" class="side-nav">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">×</a>
+        <a href="{{ url_for('index') }}">Головна</a>
+        <a href="{{ url_for('all') }}">Всі номери</a>
+        <a href="{{ url_for('add_number') }}">Додати номер</a>
+    </div>
+
     <h1>Додавання номерів</h1>
 
     <div class="form-container">
@@ -64,5 +132,21 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function openNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "250px";
+            sideNav.style.animationName = "slideIn";
+            sideNav.style.animationDuration = "0.5s";
+        }
+
+        function closeNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "0";
+            sideNav.style.animationName = "slideOut";
+            sideNav.style.animationDuration = "0.5s";
+        }
+    </script>
 </body>
 </html>

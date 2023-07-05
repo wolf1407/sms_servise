@@ -45,23 +45,87 @@
         .status-cancel {
             background-color: red;
         }
+        .side-nav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .side-nav a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .side-nav a:hover {
+            color: #f1f1f1;
+        }
+
+        .side-nav .close-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /* стилі для кнопки, яка відкриває меню */
+        .open-btn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #111;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        .open-btn:hover {
+            background-color: #444;
+        }
+
+        /* додаємо анімацію для відкриття меню */
+        @keyframes slideIn {
+            from {width: 0;}
+            to {width: 250px;}
+        }
+
+        @keyframes slideOut {
+            from {width: 250px;}
+            to {width: 0;}
+        }
     </style>
 </head>
 <body>
-    <div class="add-numbers-button">
-        <a href="{{ url_for('add_number') }}">Додати номера</a>
+    <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
+
+    <div id="sideNav" class="side-nav">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">×</a>
+        <a href="{{ url_for('index') }}">Головна</a>
+        <a href="{{ url_for('all') }}">Всі номери</a>
+        <a href="{{ url_for('add_number') }}">Додати номер</a>
     </div>
+
     <h1>Всі номери</h1>
      
     <!-- Фільтр статусу -->
     <div>
         <label for="statusFilter">Фільтр статусу:</label>
         <select id="statusFilter">
-            <option value="">Всі</option>
+            <option value="">All</option>
             <option value="status-success">Success</option>
             <option value="status-wait">Wait</option>
             <option value="status-cancel">Cancel</option>
-            <option value="status-none">None</option>
+            <option value="status-new">New</option>
         </select>
     </div>
 
@@ -70,12 +134,18 @@
             <th>id</th>
             <th>Номер</th>
             <th>Статус</th>
+            <th>Країна</th>
+            <th>Дія</th>
         </tr>
-        {% for id, number, status in numbers %}
-        <tr class="{{ 'status-' + (status.lower() if status else 'none') }}">
+        {% for id, number, status, country in numbers %}
+        <tr id="row{{ id }}" class="{{ 'status-' + (status.lower() if status else 'none') }}">
             <td>{{ id }}</td>
             <td>{{ number }}</td>
             <td>{{ status }}</td>
+            <td>{{ country }}</td>
+            <td><button onclick="deleteNumber({{ id }})"><img src="/static/delete_icon.png" alt="Delete" width="20" height="20"></button>
+            </td>
+
         </tr>
         {% endfor %}
     </table>
@@ -103,52 +173,40 @@
             }
         });
 
-        function saveCode(id) {
-            var input = document.querySelector('input[name="code"]');
-            var code = input.value;
-            var regex = /^[0-9]+$/;
-            if (!regex.test(code)) {
-                alert('Поле "Code" повинно містити лише цифри!');
-                return;
-            }
-            // Відправка коду на сервер для збереження
-            var xhr = new XMLHttpRequest();
-            var url = '/save';
-            var data = JSON.stringify({ id: id, code: code });
-            
-            xhr.open('POST', url, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
-                    alert('Код успішно збережений');
-                    window.location.reload();
-                }
-            };
-            
-            xhr.send(data);
+
+        function openNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "250px";
+            sideNav.style.animationName = "slideIn";
+            sideNav.style.animationDuration = "0.5s";
         }
 
-        function cancel(id) {
-      
-            // Відправка коду на сервер для збереження
-            var xhr = new XMLHttpRequest();
-            var url = '/cancel';
-            var data = JSON.stringify({ id: id });
-            
-            xhr.open('POST', url, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    // Успішно збережено код, можна зробити необхідні дії (наприклад, оновити сторінку)
-                    alert('Номер відмінений');
-                    window.location.reload();
+        function closeNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "0";
+            sideNav.style.animationName = "slideOut";
+            sideNav.style.animationDuration = "0.5s";
+        }
+        function deleteNumber(id) {
+            // Відправка запиту на видалення до сервера
+            fetch('/delete_number', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Якщо сервер повернув успішний статус, видалити рядок з таблиці
+                    var row = document.getElementById('row' + id);
+                    row.parentNode.removeChild(row);
+                } else {
+                    // Якщо є помилка, відобразити її
+                    alert('Error: ' + data.error);
                 }
-            };
-            
-            xhr.send(data);
+            });
         }
     </script>
     

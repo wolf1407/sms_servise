@@ -31,16 +31,87 @@
             border: none;
             cursor: pointer;
         }
+
+        .side-nav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .side-nav a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .side-nav a:hover {
+            color: #f1f1f1;
+        }
+
+        .side-nav .close-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /* стилі для кнопки, яка відкриває меню */
+        .open-btn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #111;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        .open-btn:hover {
+            background-color: #444;
+        }
+
+        /* додаємо анімацію для відкриття меню */
+        @keyframes slideIn {
+            from {width: 0;}
+            to {width: 250px;}
+        }
+
+        @keyframes slideOut {
+            from {width: 250px;}
+            to {width: 0;}
+        }
     </style>
+
+
 </head>
 <body>
-    <div class="add-numbers-button">
-        <a href="{{ url_for('add_number') }}">Додати номера</a>
+
+
+    <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
+
+    <div id="sideNav" class="side-nav">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">×</a>
+        <a href="{{ url_for('index') }}">Головна</a>
         <a href="{{ url_for('all') }}">Всі номери</a>
+        <a href="{{ url_for('add_number') }}">Додати номер</a>
     </div>
+
+    <div id="refreshTimestamp" style="position: absolute; top: 10px; right: 10px;"></div>
+
+
     
     <h1>Активні номери</h1>
-    <table>
+    <table  id="numbersTable">
         <tr>
             <th>id</th>
             <th>Номер</th>
@@ -49,7 +120,7 @@
             <th>Дії</th>
         </tr>
         {% for id, number, created_date, _ in numbers %}
-        <tr class="status-{{ status.lower() }}">
+        <tr id="row{{ id }}">
             <td>{{ id }}</td>
             <td>{{ number }}</td>
             <td><input type="text" id="code_{{ id }}" name="code" placeholder="Введіть код"></td>
@@ -110,6 +181,48 @@
             
             xhr.send(data);
         }
+
+        function openNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "250px";
+            sideNav.style.animationName = "slideIn";
+            sideNav.style.animationDuration = "0.5s";
+        }
+
+        function closeNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "0";
+            sideNav.style.animationName = "slideOut";
+            sideNav.style.animationDuration = "0.5s";
+        }
+
+        function checkForNewTasks() {
+            // Відправити запит до сервера, щоб отримати нові задачі
+            fetch('/get_new_tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    var table = document.getElementById('tasksTable');
+                    tasks.forEach(task => {
+                        // Додати новий рядок для кожної нової задачі
+                        var row = document.createElement('tr');
+                        row.id = 'row' + task.id;
+                        ['id', 'description', 'status'].forEach(field => {
+                            var cell = document.createElement('td');
+                            cell.innerText = task[field];
+                            row.appendChild(cell);
+                        });
+                        var deleteCell = document.createElement('td');
+                        var deleteButton = document.createElement('button');
+                        deleteButton.onclick = function() { deleteTask(task.id); };
+                        deleteCell.appendChild(deleteButton);
+                        row.appendChild(deleteCell);
+                        table.appendChild(row);
+                    });
+                });
+        }
+
+        setInterval(checkForNewTasks, 5000);
+
     </script>
     
 </body>

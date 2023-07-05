@@ -18,17 +18,31 @@ def get_database_path(filename):
 @app.route('/stubs/handler_api.php', methods=['GET'])
 def get_number():
     api_key = request.args.get('api_key')
-    if api_key != 'admin':
+        # відкрийте файл та прочитайте ключ
+    with open("APIKey.txt", "r") as file:
+        valid_api_key = file.read().strip()
+
+    # перевірте, чи відповідає наданий ключ дійсному
+    if api_key != valid_api_key:
         return jsonify({'error': 'Invalid API key'})
     action = request.args.get('action')
 
     if action == "getNumber":
-        country = request.args.get('country')
+
+        try:
+
+            country = request.args.get('country')
+        except:
+            country = None
         try:
             database_path = get_database_path('numbers.db')
             conn = sqlite3.connect(database_path) 
             cursor = conn.cursor()
-            query = f"SELECT number, id FROM numbers WHERE status IS NULL AND country = {country} LIMIT 1"
+
+            if country is None:
+                query = f"SELECT number, id FROM numbers WHERE status = 'new' LIMIT 1"
+            else:
+                query = f"SELECT number, id FROM numbers WHERE status = 'new' AND country = {country} LIMIT 1"
 
             cursor.execute(query)
             result = cursor.fetchone()
@@ -182,6 +196,24 @@ def index():
         if conn:
             conn.close()
 
+@app.route('/get_new_tasks', methods=['GET'])
+def get_new_numbers():
+    database_path = get_database_path('numbers.db')
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    select_query = "SELECT id ,number, dateCreate, code FROM tasks WHERE status = 'wait'"
+    cursor.execute(select_query)
+    new_numbers = cursor.fetchall()
+
+    if cursor:
+        cursor.close()
+    if conn:
+        conn.close()
+
+    return jsonify(new_numbers)
+
+
 @app.route('/all')
 def all():
     try:
@@ -189,12 +221,22 @@ def all():
         conn = sqlite3.connect(database_path) 
         cursor = conn.cursor()
 
+        # Завантаження країн з файлу
+        with open('SMS_country_id.txt', 'r') as file:
+            country_lines = file.readlines()
+
+        country_dict = {int(line.split(':')[0]): line.split(':')[1].strip() for line in country_lines}
+
         # Вибірка активних номерів зі статусом "wait"
-        select_query = "SELECT id ,number, status FROM numbers"
+        select_query = "SELECT id ,number, status, country FROM numbers"
         cursor.execute(select_query)
         numbers = cursor.fetchall()
 
+        # Заміна id країни на назву країни
+        numbers = [(id, number, status, country_dict.get(country, 'Unknown')) for id, number, status, country in numbers]
+
         return render_template('all.html', numbers=numbers)
+
 
     except sqlite3.Error as error:
         return str(error)
@@ -222,12 +264,9 @@ def cancel():
         cursor.execute(update_query, (id,))
         conn.commit()
 
-        update_query = "UPDATE numbers SET status = NULL WHERE number = ?"
+        update_query = "UPDATE numbers SET status = 'new' WHERE number = ?"
         cursor.execute(update_query, (number,))
         conn.commit()
-
-
-
         writelog(f"Відміна номер через веб інтерфейс, ід {id}")
 
         return 'Номер відмінений!'
@@ -291,13 +330,42 @@ def add_number():
     
     return render_template('add_number.html')
 
+@app.route('/delete_number', methods=['POST'])
+def delete_number():
+    data = request.get_json()
+    try:
+        id = int(data.get('id'))
+        database_path = get_database_path('numbers.db')
+        conn = sqlite3.connect(database_path) 
+        cursor = conn.cursor()
+
+        # Видалення номера за ID
+        delete_query = "DELETE FROM numbers WHERE id = ?"
+        cursor.execute(delete_query, (id,))
+        conn.commit()
+
+        writelog(f"Видалення номера через веб інтерфейс, ід {id}")
+
+        return jsonify(success=True)
+
+    except sqlite3.Error as error:
+        return jsonify(success=False, error=str(error))
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+
 def save_number(number,country):
     try:
         database_path = get_database_path('numbers.db')
         conn = sqlite3.connect(database_path) 
         cursor = conn.cursor()
-        insert_query = "INSERT INTO numbers (number, country) VALUES (?,?)"
-        cursor.execute(insert_query, (number,country,))
+        insert_query = "INSERT INTO numbers (number, country, status) VALUES (?,?,?)"
+        cursor.execute(insert_query, (number,country,"new",))
         conn.commit()
 
         return True
@@ -336,6 +404,7 @@ def writelog(text):
         file.write(current_datetime + " " + text + "\n")
         print(current_datetime + text)
         
+
 
 
 if __name__ == '__main__':

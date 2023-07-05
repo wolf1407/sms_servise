@@ -225,7 +225,7 @@ U.S. Virgin Islands:VI:1340
 Uganda:UG:256
 Ukraine:UA:380
 United Arab Emirates:AE:971
-United Kingdom:GB:44
+England:GB:44
 United States:US:1
 Uruguay:UY:598
 Uzbekistan:UZ:998

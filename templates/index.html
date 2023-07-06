@@ -197,31 +197,58 @@
         }
 
         function checkForNewTasks() {
-            // Відправити запит до сервера, щоб отримати нові задачі
-            fetch('/get_new_tasks')
-                .then(response => response.json())
-                .then(tasks => {
-                    var table = document.getElementById('tasksTable');
-                    tasks.forEach(task => {
-                        // Додати новий рядок для кожної нової задачі
-                        var row = document.createElement('tr');
-                        row.id = 'row' + task.id;
-                        ['id', 'description', 'status'].forEach(field => {
-                            var cell = document.createElement('td');
-                            cell.innerText = task[field];
-                            row.appendChild(cell);
-                        });
-                        var deleteCell = document.createElement('td');
-                        var deleteButton = document.createElement('button');
-                        deleteButton.onclick = function() { deleteTask(task.id); };
-                        deleteCell.appendChild(deleteButton);
-                        row.appendChild(deleteCell);
-                        table.appendChild(row);
-                    });
-                });
-        }
+         fetch('/get_new_tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                var table = document.getElementById('numbersTable');
+                tasks.forEach(task => {
+                    // Додати новий рядок для кожної нової задачі
 
+                    if (!document.getElementById('row' + task[0])) {
+                    var row = document.createElement('tr');
+                    row.id = 'row' + task[0]; // id
+
+                    var idCell = document.createElement('td');
+                    idCell.innerText = task[0]; // id
+                    row.appendChild(idCell);
+
+                    var numberCell = document.createElement('td');
+                    numberCell.innerText = task[1]; // number
+                    row.appendChild(numberCell);
+
+                    var codeInputCell = document.createElement('td');
+                    var codeInput = document.createElement('input');
+                    codeInput.type = 'text';
+                    codeInput.id = 'code_' + task[0];
+                    codeInput.name = 'code';
+                    codeInput.placeholder = 'Введіть код';
+                    codeInputCell.appendChild(codeInput);
+                    row.appendChild(codeInputCell);
+
+                    var createdDateCell = document.createElement('td');
+                    createdDateCell.innerText = task[2]; // created_date
+                    row.appendChild(createdDateCell);
+
+                    var actionsCell = document.createElement('td');
+                    var saveButton = document.createElement('button');
+                    saveButton.innerText = 'Зберегти';
+                    saveButton.onclick = function() { saveCode(task[0]); };
+                    actionsCell.appendChild(saveButton);
+                    
+                    var cancelButton = document.createElement('button');
+                    cancelButton.innerText = 'Відмінити';
+                    cancelButton.onclick = function() { cancel(task[0], task[1]); };
+                    actionsCell.appendChild(cancelButton);
+
+                    row.appendChild(actionsCell);
+
+                    table.appendChild(row);
+                    }
+                });
+            });
+        }
         setInterval(checkForNewTasks, 5000);
+
 
     </script>
     

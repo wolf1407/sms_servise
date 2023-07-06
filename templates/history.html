@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список номерів</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .pagination {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            box-sizing: border-box;
+        }
+        
+        input[type="submit"] {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .side-nav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .side-nav a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .side-nav a:hover {
+            color: #f1f1f1;
+        }
+
+        .side-nav .close-btn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /* стилі для кнопки, яка відкриває меню */
+        .open-btn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #111;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        .open-btn:hover {
+            background-color: #444;
+        }
+
+        /* додаємо анімацію для відкриття меню */
+        @keyframes slideIn {
+            from {width: 0;}
+            to {width: 250px;}
+        }
+
+        @keyframes slideOut {
+            from {width: 250px;}
+            to {width: 0;}
+        }
+        .side-nav {
+        height: 100%;
+        width: 250px; /* Сет width of side menu to 250px */
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: #111;
+        overflow-x: hidden;
+        padding-top: 60px;
+    }
+
+    .main-content {
+        margin-left: 250px; /* Add left margin to the main content equal to the width of the side menu */
+    }
+    </style>
+
+
+</head>
+<body>
+
+
+    <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
+
+    <div id="sideNav" class="side-nav">
+        
+        <a href="{{ url_for('index') }}">Головна</a>
+        <a href="{{ url_for('history') }}">Історія</a>
+        <a href="{{ url_for('all') }}">Всі номери</a>
+        <a href="{{ url_for('add_number') }}">Додати номер</a>
+    </div>
+
+    <div id="refreshTimestamp" style="position: absolute; top: 10px; right: 10px;"></div>
+
+    <div class="main-content">
+
+    <h1>Активні номери</h1>
+
+    <form method="GET" action="{{ url_for('history') }}">
+        <label for="status">Фільтр по статусу:</label>
+        <select name="status" id="status">
+            <option value="">all</option>
+            <option value="cancel">cancel</option>
+            <option value="ready">ready</option>
+            <option value="success">success</option>
+            <option value="wait">wait</option>
+        </select>
+        <input type="submit" value="Фільтрувати">
+    </form>
+    
+   
+    <table  id="numbersTable">
+        <tr>
+            <th>id</th>
+            <th>Номер</th>
+            <th>Код</th>
+            <th>Дата створення / завершення</th>
+            <th>Статус</th>
+        </tr>
+        {% for id, number, created_date, code, datefinish , status in numbers %}
+        <tr id="row{{ id }}">
+            <td>{{ id }}</td>
+            <td>{{ number }}</td>
+            <td>{% if code != None %}{{ code }}{% else %}{% endif %}</td>
+            <td>{{ created_date }} / {% if datefinish != None %}{{ datefinish }}{% else %}{% endif %}</td>
+            <td>{{ status }}</td>
+        </tr>
+        {% endfor %}
+        {% if total_pages > 1 %}
+            <div class="pagination">
+                {% if current_page > 1 %}
+                <a href="{{ url_for('history', page=current_page-1) }}">&laquo; Попередня</a>
+                {% endif %}
+
+                {% for i in range(1, total_pages+1) %}
+                <a href="{{ url_for('history', page=i) }}" class="{{ 'active' if i == current_page }}">{{ i }}</a>
+                {% endfor %}
+
+                {% if current_page < total_pages %}
+                <a href="{{ url_for('history', page=current_page+1) }}">Наступна &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+
+
+    </table>
+
+</div>
+    
+    <script>
+
+        function openNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "250px";
+            sideNav.style.animationName = "slideIn";
+            sideNav.style.animationDuration = "0.5s";
+        }
+
+        function closeNav() {
+            var sideNav = document.getElementById("sideNav");
+            sideNav.style.width = "0";
+            sideNav.style.animationName = "slideOut";
+            sideNav.style.animationDuration = "0.5s";
+        }
+
+
+
+    </script>
+    
+</body>
+</html>

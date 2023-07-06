@@ -91,12 +91,12 @@ def get_number():
                 status = result[2]
                 if code:
                     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    update_query = f"UPDATE tasks SET status = 'OK', datefinish = '{current_datetime}' WHERE id = ?"
+                    update_query = f"UPDATE tasks SET status = 'success', datefinish = '{current_datetime}' WHERE id = ?"
                     cursor.execute(update_query, (id,))
                     
 
                     number = result[1]
-                    update_query = f"UPDATE numbers SET status = 'Success' WHERE number = ?"
+                    update_query = f"UPDATE numbers SET status = 'success' WHERE number = ?"
                     cursor.execute(update_query, (number,))
                     conn.commit()
                     writelog(f"Отримано код ({code}) id {id}")
@@ -149,10 +149,9 @@ def get_number():
             result = cursor.fetchone()
             number = result[0]
 
-
-
-            update_query = f"UPDATE tasks SET status = ? WHERE id = ?"
-            cursor.execute(update_query, (status,id,))
+            current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            update_query = f"UPDATE tasks SET status = ?, datefinish = ? WHERE id = ?"
+            cursor.execute(update_query, (status,current_datetime,id,))
 
             # Update status for numbers table
             update_query = "UPDATE numbers SET status = ? WHERE number = ?"
@@ -196,6 +195,45 @@ def index():
         if conn:
             conn.close()
 
+@app.route('/history')
+def history():
+    status = request.args.get('status')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    try:
+        database_path = get_database_path('numbers.db')
+        conn = sqlite3.connect(database_path) 
+        cursor = conn.cursor()
+
+        if status:
+            select_query = f"SELECT id ,number, dateCreate, code, datefinish, status FROM tasks WHERE status = '{status}' ORDER BY id DESC LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+        else:
+            select_query = f"SELECT id ,number, dateCreate, code, datefinish, status FROM tasks ORDER BY id DESC LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+
+        cursor.execute(select_query)
+        numbers = cursor.fetchall()
+
+        # Determine the total number of pages
+        count_query = f"SELECT COUNT(*) FROM tasks WHERE status = '{status}'" if status else "SELECT COUNT(*) FROM tasks"
+        cursor.execute(count_query)
+        total_numbers = cursor.fetchone()[0]
+        total_pages = (total_numbers // per_page) + (1 if total_numbers % per_page else 0)
+
+        return render_template('history.html', numbers=numbers, total_pages=total_pages, current_page=page)
+
+    except sqlite3.Error as error:
+        return str(error)
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+  
+
 @app.route('/get_new_tasks', methods=['GET'])
 def get_new_numbers():
     database_path = get_database_path('numbers.db')
@@ -214,8 +252,12 @@ def get_new_numbers():
     return jsonify(new_numbers)
 
 
-@app.route('/all')
+
+
+@app.route('/all', methods=['GET'])
 def all():
+    page = request.args.get('page', 1, type=int)  # отримайте поточну сторінку з параметрів запиту
+    per_page = 10  # визначте, скільки записів ви хочете відобразити на сторінці
     try:
         database_path = get_database_path('numbers.db')
         conn = sqlite3.connect(database_path) 
@@ -228,15 +270,19 @@ def all():
         country_dict = {int(line.split(':')[0]): line.split(':')[1].strip() for line in country_lines}
 
         # Вибірка активних номерів зі статусом "wait"
-        select_query = "SELECT id ,number, status, country FROM numbers"
-        cursor.execute(select_query)
+        select_query = f"SELECT id ,number, status, country FROM numbers LIMIT ? OFFSET ?"
+        cursor.execute(select_query, (per_page, (page-1)*per_page))
         numbers = cursor.fetchall()
+
+        # Визначаємо загальну кількість записів
+        count_query = "SELECT COUNT(*) FROM numbers"
+        cursor.execute(count_query)
+        total_count = cursor.fetchone()[0]
 
         # Заміна id країни на назву країни
         numbers = [(id, number, status, country_dict.get(country, 'Unknown')) for id, number, status, country in numbers]
 
-        return render_template('all.html', numbers=numbers)
-
+        return render_template('all.html', numbers=numbers, current_page=page, total_pages=total_count // per_page + 1)
 
     except sqlite3.Error as error:
         return str(error)
@@ -249,6 +295,7 @@ def all():
 
 
 
+
 @app.route('/cancel', methods=['POST'])
 def cancel():
     data = request.get_json()
@@ -258,10 +305,10 @@ def cancel():
         database_path = get_database_path('numbers.db')
         conn = sqlite3.connect(database_path) 
         cursor = conn.cursor()
-
-        # Оновлення поля "status" для вказаного номера
-        update_query = "UPDATE tasks SET status = 'cancel' WHERE id = ?"
-        cursor.execute(update_query, (id,))
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        update_query = "UPDATE tasks SET status = 'cancel', datefinish = ? WHERE id = ?"
+        cursor.execute(update_query, (current_datetime,id,))
         conn.commit()
 
         update_query = "UPDATE numbers SET status = 'new' WHERE number = ?"

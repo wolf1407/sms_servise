@@ -5,9 +5,14 @@
     <title>Список номерів</title>
 
     <style>
-        table {
+       table {
             border-collapse: collapse;
             width: 100%;
+            margin-top: 20px;
+        }
+        .pagination {
+            margin-top: 20px;
+            margin-bottom: 20px;
         }
         
         th, td {
@@ -103,18 +108,35 @@
             from {width: 250px;}
             to {width: 0;}
         }
+        .side-nav {
+            height: 100%;
+            width: 250px; /* Сет width of side menu to 250px */
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+
+        .main-content {
+            margin-left: 250px; /* Add left margin to the main content equal to the width of the side menu */
+        }
     </style>
 </head>
 <body>
     <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
 
     <div id="sideNav" class="side-nav">
-        <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">×</a>
+        
         <a href="{{ url_for('index') }}">Головна</a>
+        <a href="{{ url_for('history') }}">Історія</a>
         <a href="{{ url_for('all') }}">Всі номери</a>
         <a href="{{ url_for('add_number') }}">Додати номер</a>
     </div>
 
+    <div class="main-content"> 
     <h1>Всі номери</h1>
      
     <!-- Фільтр статусу -->
@@ -148,7 +170,25 @@
 
         </tr>
         {% endfor %}
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+                {% if current_page > 1 %}
+                <a href="{{ url_for('all', page=current_page-1) }}">&laquo; Попередня</a>
+                {% endif %}
+
+                {% for i in range(1, total_pages+1) %}
+                <a href="{{ url_for('all', page=i) }}" class="{{ 'active' if i == current_page }}">{{ i }}</a>
+                {% endfor %}
+
+                {% if current_page < total_pages %}
+                <a href="{{ url_for('all', page=current_page+1) }}">Наступна &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        
     </table>
+</div>
     
     <script>
         document.getElementById('statusFilter').addEventListener('change', function() {

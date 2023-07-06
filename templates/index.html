@@ -90,6 +90,21 @@
             from {width: 250px;}
             to {width: 0;}
         }
+        .side-nav {
+            height: 100%;
+            width: 250px; /* Сет width of side menu to 250px */
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+
+        .main-content {
+            margin-left: 250px; /* Add left margin to the main content equal to the width of the side menu */
+        }
     </style>
 
 
@@ -97,18 +112,16 @@
 <body>
 
 
-    <button class="open-btn" onclick="openNav()">☰ Відкрити меню</button>
-
     <div id="sideNav" class="side-nav">
-        <a href="javascript:void(0)" class="close-btn" onclick="closeNav()">×</a>
         <a href="{{ url_for('index') }}">Головна</a>
+        <a href="{{ url_for('history') }}">Історія</a>
         <a href="{{ url_for('all') }}">Всі номери</a>
         <a href="{{ url_for('add_number') }}">Додати номер</a>
     </div>
 
     <div id="refreshTimestamp" style="position: absolute; top: 10px; right: 10px;"></div>
 
-
+    <div class="main-content"> 
     
     <h1>Активні номери</h1>
     <table  id="numbersTable">
@@ -132,6 +145,7 @@
         </tr>
         {% endfor %}
     </table>
+</div>
     
     <script>
         function saveCode(id) {
